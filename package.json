@@ -1,0 +1,23 @@
+{
+  "name": "simpleserver",
+  "version": "0.1.1",
+  "description": "A simple, open source web framework for NodeJS, designed as an alternative for Apache or Microsoft's Internet Information Services.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "dependencies":{
+	  "mime-types":">= 2.1.0"
+  },
+  "keywords": [
+    "web",
+    "server",
+    "simpleserver",
+    "iis",
+    "apache",
+    "http"
+  ],
+  "author": "Nicholas Schleeter",
+  "license": "MIT"
+}
