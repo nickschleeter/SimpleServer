@@ -1,5 +1,5 @@
 {
-  "name": "simpleserver",
+  "name": "freeserver",
   "version": "0.1.1",
   "description": "A simple, open source web framework for NodeJS, designed as an alternative for Apache or Microsoft's Internet Information Services.",
   "main": "index.js",
