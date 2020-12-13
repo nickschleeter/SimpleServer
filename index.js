@@ -418,8 +418,9 @@ var RegPath = function (url, callbach) {
 }
 
 var startServer = function (options) {
-
+    var wrapper_fn = null;
     var reqHandler = function handler(req, res) {
+        var wrapper = wrapper_fn;
         enterContext({
             exceptionHandler:exceptionHandler,
             asyncStack:[]
@@ -607,6 +608,12 @@ var startServer = function (options) {
 
 
         var url = req.url;
+        if(wrapper) {
+            enterContext(global_app_context, function(){
+                wrapper(global_app_context.request, global_app_context.response);
+            });
+            return;
+        }
         if (PathRegs[url]) {
             enterContext(global_app_context, function(){
                 PathRegs[url](global_app_context.request, global_app_context.response);
@@ -625,7 +632,7 @@ var startServer = function (options) {
                 }
             }
             url = url.substring(1);
-            var filename = Path.join(cwd, 'content/', Url.parse(url).pathname);
+            var filename = Path.join(cwd, Url.parse(url).pathname);
             if (filename.indexOf(Path.join(cwd, 'content')) != 0) {
                 filename = 'attack';
             }
@@ -635,6 +642,7 @@ var startServer = function (options) {
                 if (!err) {
                     
                        fs.stat(filename,function(err,results){
+                           enterContext(async_ctx, function(){
                         var str = fs.createReadStream(filename);
                     try {
                         var headers = {'Content-Type': mrmime.lookup(getExtension(filename)), 'Content-Length':results.size};
@@ -663,6 +671,7 @@ var startServer = function (options) {
                 }catch(er) {
                     res.end();
                 }
+            });
                     });
                     
 
@@ -684,7 +693,16 @@ var startServer = function (options) {
         https.createServer(options, reqHandler).listen(options.port, options.ip);
 
     } else {
-        http.createServer(reqHandler).listen(options.port, options.ip);
+        if(options.injector) {
+            // Caller is using another server (such as express)
+            // and would like to inject requests to us
+            options.injector(function(req, res, wrapper){
+                wrapper_fn = wrapper;
+                reqHandler(req, res);
+            });
+        }else {
+            http.createServer(reqHandler).listen(options.port, options.ip);
+        }
     }
 
     return {
