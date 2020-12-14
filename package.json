@@ -1,6 +1,6 @@
 {
   "name": "freeserver",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A simple, open source web framework for NodeJS, designed as an alternative for Apache or Microsoft's Internet Information Services.",
   "main": "index.js",
   "scripts": {

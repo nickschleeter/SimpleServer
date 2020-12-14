@@ -106,6 +106,16 @@ var Promise = function () {
             callback(_result);
         } else {
             var reg = {next:null, prev:null, value:callback};
+            if(global_app_context != captured_context) {
+                // Multiple requests may be listening for a global event.
+                // Switch to appropriate request context when this happens.
+                var local_capture = global_app_context;
+                reg.value = function(val) {
+                    enterContext(local_capture, function(){
+                        callback(val);
+                    });
+                }
+            }
             callbacks_pending.add(reg);
             return {
                     cancel:function(){
