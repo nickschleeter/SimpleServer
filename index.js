@@ -42,7 +42,13 @@ var StringPointer = function (string) {
         }
     };
 };
-
+var enterContextIfValid = function(value, callback) {
+    if(!value) {
+        callback();
+        return;
+    }
+    return enterContext(value, callback);
+};
 var enterContext = function(value, callback) {
     var prevContext = global_app_context;
     global_app_context = value;
@@ -90,7 +96,7 @@ var Promise = function () {
     var _result;
     var captured_context = global_app_context;
     retval.post = function (result) {
-        enterContext(captured_context,function(){
+        enterContextIfValid(captured_context,function(){
             _result = result;
             var pending = callbacks_pending;
             callbacks_pending = List.createList();
