@@ -7,6 +7,7 @@ var mrmime = require('mime-types'); //Mystery mime....
 var Path = require('path');
 var Url = require('url');
 var vm = require('vm');
+var List = require('intrusive-linked-list');
 
 var cwd = process.cwd();
 
@@ -84,15 +85,19 @@ var exceptionHandler = function(er) {
 }
 
 var Promise = function () {
-    var callbacks_pending = new Array();
+    var callbacks_pending = List.createList();
     var retval = {};
     var _result;
     var captured_context = global_app_context;
     retval.post = function (result) {
         enterContext(captured_context,function(){
             _result = result;
-            for (var i = 0; i < callbacks_pending.length; i++) {
-                callbacks_pending[i](result);
+            var pending = callbacks_pending;
+            callbacks_pending = List.createList();
+            while(!pending.empty()) {
+                var current = pending.front();
+                pending.remove(current);
+                current.value(result);
             }
         });
     };
@@ -100,7 +105,15 @@ var Promise = function () {
         if (_result) {
             callback(_result);
         } else {
-            callbacks_pending.push(callback);
+            var reg = {next:null, prev:null, value:callback};
+            callbacks_pending.add(reg);
+            return {
+                    cancel:function(){
+                    if(reg.next) {
+                        callbacks_pending.remove(reg);
+                    }
+                }
+            };
         }
     };
     return retval;
