@@ -8,6 +8,12 @@ var Path = require('path');
 var Url = require('url');
 var vm = require('vm');
 var List = require('intrusive-linked-list');
+var cookie = require('cookie');
+
+// Cookie-parser notes:
+// We send it a fake req, res, next to ensure that it just does what it says in the name:
+// parses cookies. We're not trying to do anything fancy here other than parse cookies.
+// We're not generating keys. We're not doing fancy crypto stuff, just parsing.
 
 var cwd = process.cwd();
 
@@ -315,6 +321,9 @@ var preprocess = function (text, callback, program, filename, scopeoverride) {
                             newContext.out = function (txt) {
                                 p_output += txt;
                             };
+                            newContext.model = global_app_context.model;
+                            newContext.request = global_app_context.request;
+                            newContext.response = global_app_context.response;
                             setContext(newContext);
 
                             var txt = program.addCompilationUnit(compiled);
@@ -442,12 +451,22 @@ renderHtml = function (filename, callback, contextOverride) {
 
 var PathRegs = new Object();
 
+/**
+ * Registers a path handler
+ * @param {String} url 
+ * @param {*} callbach 
+ */
 var RegPath = function (url, callbach) {
     PathRegs[url] = callbach; //Call Beethoven!
 }
 
 var startServer = function (options) {
     var wrapper_fn = null;
+    /**
+     * Request handler
+     * @param {http.ClientRequest} req 
+     * @param {http.ServerResponse} res 
+     */
     var reqHandler = function handler(req, res) {
         var wrapper = wrapper_fn;
         enterContext({
@@ -498,6 +517,14 @@ var startServer = function (options) {
                 } catch (er) {
                     callback(null);
                 }
+            },
+            getCookies:function() 
+            {
+                // Freshly baked cookies
+                if(!req.headers.cookie) {
+                    return {};
+                }
+                return cookie.parse(req.headers.cookie);
             },
             /**
              * Gets the form data that the client (may have) submitted.
@@ -563,6 +590,7 @@ var startServer = function (options) {
         };
         global_app_context.response = {
             headers: {'Content-Type': 'text/html; charset=UTF-8'},
+            cookies: {},
             /**
              * Adds a header to the current HTML response output stream
              * @param {String} name
@@ -570,6 +598,23 @@ var startServer = function (options) {
              */
             addHeader: function (name, value) {
                 this.headers[name] = value;
+            },
+            /**
+             * Adds a cookie to the response headers
+             * @param {String} name 
+             * @param {String} value 
+             */
+            addCookie:function(name, value) {
+                this.cookies[name] = {value:value, options:{}};
+            },
+            /**
+             * Adds a cookie with options
+             * @param {String} name 
+             * @param {String} value 
+             * @param {import('cookie').CookieSerializeOptions} options
+             */
+            addCookieWithOptions:function(name, value, options) {
+                this.cookies[name] = {value:value, options:{}};
             },
             statusCode: 200,
             /**
@@ -583,7 +628,12 @@ var startServer = function (options) {
              * Sends a response to the client containing a string, stream (experimental), or byte array
              */
             respond: function (response) {
-
+                var serialized_cookies = [];
+                for(var key in this.cookies) {
+                    serialized_cookies.push(cookie.serialize(key, this.cookies[key].value, this.cookies[key].options));
+                }
+                // TODO: Response fast-path (set headers all in one go).
+                res.setHeader('Set-Cookie', serialized_cookies);
                 if (response.byteLength) {
                     //Byte array
                     this.addHeader('Content-Length', response.byteLength);

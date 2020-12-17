@@ -6,11 +6,11 @@ SimpleServer is an open-source server system for web developers interested in cr
 
 ## Usage
 
-See example website on [GitHub](https://github.com/NicholasSchleeter/NodeSampleSite)
+See example website on [GitHub](https://github.com/NicholasSchleeter/SampleSite)
 
 ## Developing
 
-Find our source on [GitHub](https://github.com/nickschleeter/OpenServer-Node). Anyone is welcome to submit pull requests.
+Find our source on [GitHub](https://github.com/nickschleeter/SimpleServer). Anyone is welcome to submit pull requests.
 
 ### Tools
 
